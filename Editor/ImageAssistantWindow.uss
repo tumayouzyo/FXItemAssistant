@@ -1,0 +1,23 @@
+.assistant-scroll { flex-grow: 1; }
+.assistant-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { flex-grow: 1; }
+.assistant-root { flex-grow: 1; padding: 8px; }
+.row { flex-direction: row; align-items: center; margin-bottom: 5px; }
+.grow { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.workspace { flex-grow: 1; }
+.preview-panel { flex-grow: 1; min-width: 200px; }
+.preview { flex-grow: 1; height: 260px; min-height: 180px; background-color: rgb(38, 38, 38); }
+.controls { flex-shrink: 0; }
+.controls .unity-base-field__label { min-width: 120px; }
+.hint { font-size: 11px; white-space: normal; margin-top: 4px; margin-bottom: 4px; }
+.section { margin-top: 6px; margin-bottom: 6px; }
+.save-button { height: 32px; flex-grow: 2; }
+.folder-button { height: 32px; flex-grow: 1; }
+.path { white-space: normal; }
+.settings { height: 140px; flex-shrink: 0; }
+.wrap { flex-wrap: wrap; }
+.wrap > .grow { flex-basis: 220px; }
+.title { -unity-font-style: bold; margin-bottom: 6px; }
+#targetField { flex-basis: 250px; }
+#targetField .unity-base-field__label { min-width: 95px; }
+#settingsFoldout, #status { flex-shrink: 0; }
+.settings-window .settings { height: auto; }

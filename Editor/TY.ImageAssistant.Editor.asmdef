@@ -1,0 +1,6 @@
+{
+  "name": "TY.ImageAssistant.Editor",
+  "rootNamespace": "TY.ImageAssistant",
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}
