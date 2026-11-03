@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -8,6 +9,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
 namespace TY.ImageAssistant.Tests
@@ -243,9 +245,85 @@ namespace TY.ImageAssistant.Tests
                 Assert.That(settingsField.GetValue(window), Is.SameAs(settings));
                 Assert.That(settings.Width, Is.EqualTo(777));
                 window.rootVisualElement.Q<IntegerField>("heightField").value = 321;
-                Assert.That(window.rootVisualElement.Q<DropdownField>("presetField").value, Is.EqualTo("カスタム"));
+                Assert.That(window.rootVisualElement.Q<DropdownField>("presetField").value, Is.EqualTo(ImageLocalization.PresetName("カスタム")));
             }
             finally { Object.DestroyImmediate(window); }
+        }
+
+        [UnityTest]
+        public IEnumerator LanguageSwitchPreservesInputsAndCaptureSettings()
+        {
+            var originalLanguage = ImageLocalization.English;
+            var window = ScriptableObject.CreateInstance<ImageAssistantWindow>();
+            try
+            {
+                ImageLocalization.English = false;
+                window.Show();
+                window.CreateGUI();
+                window.rootVisualElement.Q<IntegerField>("widthField").value = 777;
+                window.rootVisualElement.Q<TextField>("saveName").value = "保存先";
+                window.rootVisualElement.Q<TextField>("saveFolder").value = "Assets/素材";
+                typeof(ImageAssistantWindow).GetMethod("OpenSettings", Private).Invoke(window, null);
+                var panel = (VisualElement)typeof(ImageAssistantWindow).GetField("settingsPanel", Private).GetValue(window);
+                panel.Q<TextField>("prefixText").value = "素材_";
+                panel.Q<Toggle>("forceFolderField").value = true;
+                panel.Q<TextField>("forcedFolderField").value = "Assets/保存先";
+                var options = typeof(ImageAssistantWindow).GetField("options", Private).GetValue(window) as ImageToolOptions;
+                var field = typeof(ImageAssistantWindow).GetField("settings", Private);
+                var before = JsonUtility.ToJson(field.GetValue(window));
+                ImageLocalization.English = true;
+                yield return null;
+                Assert.That(window.rootVisualElement.Q<UnityEditor.UIElements.ObjectField>("targetField").label, Is.EqualTo("Capture item"));
+                Assert.That(window.rootVisualElement.Q<IntegerField>("widthField").tooltip, Does.Contain("Final PNG width"));
+                Assert.That(window.rootVisualElement.Q<DropdownField>("presetField").value, Is.EqualTo("Custom"));
+                Assert.That(window.rootVisualElement.Q<TextField>("saveName").value, Is.EqualTo("保存先"));
+                Assert.That(window.rootVisualElement.Q<TextField>("saveFolder").value, Is.EqualTo("Assets/保存先"));
+                Assert.That(typeof(ImageAssistantWindow).GetField("saveFolder", Private).GetValue(window), Is.EqualTo("Assets/素材"));
+                Assert.That(JsonUtility.ToJson(field.GetValue(window)), Is.EqualTo(before));
+                Assert.That(options.Prefix, Is.EqualTo("素材_"));
+                Assert.That(options.ForcedFolder, Is.EqualTo("Assets/保存先"));
+                Assert.That(panel.Q<TextField>("prefixText").value, Is.EqualTo("素材_"));
+                ImageLocalization.English = false;
+                yield return null;
+                Assert.That(window.rootVisualElement.Q<IntegerField>("widthField").label, Is.EqualTo("幅 (px)"));
+                Assert.That(window.rootVisualElement.Q<TextField>("saveName").value, Is.EqualTo("保存先"));
+                Assert.That(JsonUtility.ToJson(field.GetValue(window)), Is.EqualTo(before));
+            }
+            finally
+            {
+                Object.DestroyImmediate(window);
+                ImageLocalization.English = originalLanguage;
+            }
+        }
+
+        [Test]
+        public void SettingsLanguageSwitchKeepsSharedPanelAndTranslatesNotices()
+        {
+            var originalLanguage = ImageLocalization.English;
+            var panel = new VisualElement();
+            var input = new TextField("接頭辞") { value = "素材" };
+            panel.Add(input);
+            var window = ScriptableObject.CreateInstance<ImageAssistantSettingsWindow>();
+            try
+            {
+                ImageLocalization.English = false;
+                window.Initialize(panel);
+                Assert.That(window.rootVisualElement.Q<Button>("englishButton"), Is.Not.Null);
+                ImageLocalization.English = true;
+                Assert.That(window.titleContent.text, Is.EqualTo("FXItemAssistant Settings"));
+                Assert.That(input.label, Is.EqualTo("Prefix"));
+                Assert.That(input.value, Is.EqualTo("素材"));
+                Assert.That(window.rootVisualElement.Q<Button>("closeSettingsButton").text, Is.EqualTo("Close"));
+                Assert.That(window.rootVisualElement.Q<Button>("englishButton").tooltip, Does.Contain("Switch to English"));
+                Assert.That(window.rootVisualElement.Contains(panel), Is.True);
+                Assert.That(ImageLocalization.IsBuiltInPresetName("Material"), Is.True);
+                Assert.That(ImageLocalization.Format("保存しました：{0}", "Assets/保存先/素材.png"), Is.EqualTo("Saved: Assets/保存先/素材.png"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(window);
+                ImageLocalization.English = originalLanguage;
+            }
         }
     }
 }

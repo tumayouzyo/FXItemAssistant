@@ -26,7 +26,7 @@ namespace TY.ImageAssistant
                 return "出力解像度は1〜16384pxで指定してください。";
             if (Supersampling < 1 || Supersampling > 8) return "撮影倍率は1〜8xで指定してください。";
             if ((long)Width * Supersampling > hardwareLimit || (long)Height * Supersampling > hardwareLimit)
-                return $"内部撮影サイズ {Width * Supersampling}×{Height * Supersampling} が、このPCの上限 {hardwareLimit}px を超えています。";
+                return ImageLocalization.Format("内部撮影サイズ {0}×{1} が、このPCの上限 {2}px を超えています。", (long)Width * Supersampling, (long)Height * Supersampling, hardwareLimit);
             return null;
         }
     }

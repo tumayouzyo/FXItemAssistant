@@ -18,7 +18,7 @@ namespace TY.ImageAssistant
         {
             get
             {
-                if (!string.IsNullOrEmpty(assetRoot)) return assetRoot;
+                if (!string.IsNullOrEmpty(assetRoot) && AssetDatabase.IsValidFolder(assetRoot)) return assetRoot;
                 var script = AssetDatabase.FindAssets("ImageAssistantWindow t:MonoScript")
                     .Select(AssetDatabase.GUIDToAssetPath)
                     .FirstOrDefault(path => Path.GetFileName(path) == "ImageAssistantWindow.cs");
@@ -48,9 +48,12 @@ namespace TY.ImageAssistant
         private int lastCameraHash;
         private Image previewImage;
         private HelpBox status;
+        private string statusKey = "Hierarchyから撮影するアイテムを指定してください。";
+        private object[] statusArguments = Array.Empty<object>();
         private DropdownField presetField;
         private Button saveButton;
         private bool uiReady;
+        private bool refreshingControls;
         private VisualElement settingsPanel;
         private ImageAssistantSettingsWindow settingsWindow;
 
@@ -62,6 +65,7 @@ namespace TY.ImageAssistant
             minSize = new Vector2(420, 640);
             presets = ImagePresets.Load();
             EditorApplication.update += UpdatePreview;
+            ImageLocalization.Changed += RefreshLanguage;
             EditorApplication.playModeStateChanged += PlayModeChanged;
             Undo.undoRedoPerformed += Invalidate;
             AssemblyReloadEvents.beforeAssemblyReload += DisposePreview;
@@ -70,6 +74,7 @@ namespace TY.ImageAssistant
         private void OnDisable()
         {
             EditorApplication.update -= UpdatePreview;
+            ImageLocalization.Changed -= RefreshLanguage;
             EditorApplication.playModeStateChanged -= PlayModeChanged;
             Undo.undoRedoPerformed -= Invalidate;
             AssemblyReloadEvents.beforeAssemblyReload -= DisposePreview;
@@ -93,11 +98,11 @@ namespace TY.ImageAssistant
             var targetField = Q<ObjectField>("targetField");
             targetField.objectType = typeof(GameObject);
             targetField.allowSceneObjects = true;
-            targetField.RegisterValueChangedCallback(evt => Run(() => SetItem(evt.newValue as GameObject)));
+            OnValue(targetField, evt => Run(() => SetItem(evt.newValue as GameObject)));
             var basisField = Q<ObjectField>("basisField");
             basisField.objectType = typeof(Renderer);
             basisField.allowSceneObjects = true;
-            basisField.RegisterValueChangedCallback(evt => Run(() =>
+            OnValue(basisField, evt => Run(() =>
             {
                 var candidate = evt.newValue as Renderer;
                 if (candidate && (!item || !candidate.transform.IsChildOf(item.transform) || !(candidate is MeshRenderer || candidate is SkinnedMeshRenderer)))
@@ -114,47 +119,53 @@ namespace TY.ImageAssistant
             Button("lightingButton", () => { fixedLighting = !fixedLighting; RefreshFields(); Invalidate(); });
             presetField = Q<DropdownField>("presetField");
             RefreshPresetChoices();
-            presetField.RegisterValueChangedCallback(evt => Run(() => ApplyPreset(evt.newValue)));
-            Q<IntegerField>("widthField").RegisterValueChangedCallback(evt => ChangeSettings(() => settings.Width = evt.newValue));
-            Q<IntegerField>("heightField").RegisterValueChangedCallback(evt => ChangeSettings(() => settings.Height = evt.newValue));
+            OnValue(presetField, evt =>
+            {
+                if (!refreshingControls) Run(() => ApplyPreset(presetField.index >= 0 && presetField.index < 4 ? ImagePresets.BuiltInNames[presetField.index] : evt.newValue));
+            });
+            OnValue(Q<IntegerField>("widthField"), evt => ChangeSettings(() => settings.Width = evt.newValue));
+            OnValue(Q<IntegerField>("heightField"), evt => ChangeSettings(() => settings.Height = evt.newValue));
             var sampling = Q<DropdownField>("samplingField");
             sampling.choices = Enumerable.Range(1, 8).Select(value => value + "x").ToList();
-            sampling.RegisterValueChangedCallback(evt => ChangeSettings(() => settings.Supersampling = sampling.index + 1));
+            OnValue(sampling, evt => ChangeSettings(() => settings.Supersampling = sampling.index + 1));
             var imports = Q<DropdownField>("importField");
-            imports.choices = new List<string> { "アイコン", "通常（デカール素材）", "サムネイル" };
-            imports.RegisterValueChangedCallback(evt => ChangeSettings(() => settings.ImportMode = (ImageImportMode)imports.index));
-            Q<Toggle>("transparentField").RegisterValueChangedCallback(evt => ChangeSettings(() => settings.Transparent = evt.newValue));
-            Q<Toggle>("hideOthersField").RegisterValueChangedCallback(evt => ChangeSettings(() =>
+            imports.choices = new List<string> { ImageLocalization.Text("アイコン"), ImageLocalization.Text("通常（デカール素材）"), ImageLocalization.Text("サムネイル") };
+            OnValue(imports, evt =>
+            {
+                if (!refreshingControls) ChangeSettings(() => settings.ImportMode = (ImageImportMode)imports.index);
+            });
+            OnValue(Q<Toggle>("transparentField"), evt => ChangeSettings(() => settings.Transparent = evt.newValue));
+            OnValue(Q<Toggle>("hideOthersField"), evt => ChangeSettings(() =>
             {
                 settings.HideOthers = evt.newValue;
                 RebuildPreview();
             }));
-            Q<Slider>("focalField").RegisterValueChangedCallback(evt => Run(() =>
+            OnValue(Q<Slider>("focalField"), evt => Run(() =>
             {
                 focalLength = Mathf.Clamp(evt.newValue, 85, 200);
                 RefreshFields();
                 Invalidate();
             }));
-            Q<Toggle>("orthoField").RegisterValueChangedCallback(evt => Run(() =>
+            OnValue(Q<Toggle>("orthoField"), evt => Run(() =>
             {
                 if (GetSceneView()) { sceneView.orthographic = evt.newValue; sceneView.Repaint(); }
                 Invalidate();
             }));
             var backgrounds = Q<DropdownField>("backgroundField");
             backgrounds.choices = new List<string> { "Solid", "Skybox" };
-            backgrounds.RegisterValueChangedCallback(evt => { background = (ImageBackground)backgrounds.index; RefreshFields(); Invalidate(); });
-            Q<ColorField>("colorField").RegisterValueChangedCallback(evt => { backgroundColor = evt.newValue; Invalidate(); });
+            OnValue(backgrounds, evt => { background = (ImageBackground)backgrounds.index; RefreshFields(); Invalidate(); });
+            OnValue(Q<ColorField>("colorField"), evt => { backgroundColor = evt.newValue; Invalidate(); });
             Q<ColorField>("colorField").showAlpha = false;
-            Q<Toggle>("prefixEnabled").RegisterValueChangedCallback(evt => { options.PrefixEnabled = evt.newValue; RefreshOutput(); });
-            Q<TextField>("prefixText").RegisterValueChangedCallback(evt => { options.Prefix = evt.newValue; RefreshOutput(); });
-            Q<Toggle>("numberingField").RegisterValueChangedCallback(evt => { options.Numbering = evt.newValue; RefreshOutput(); });
-            Q<Toggle>("forceFolderField").RegisterValueChangedCallback(evt => { options.ForceFolder = evt.newValue; RefreshFields(); });
-            Q<TextField>("forcedFolderField").RegisterValueChangedCallback(evt => { options.ForcedFolder = evt.newValue; RefreshOutput(); });
+            OnValue(Q<Toggle>("prefixEnabled"), evt => { options.PrefixEnabled = evt.newValue; RefreshOutput(); });
+            OnValue(Q<TextField>("prefixText"), evt => { options.Prefix = evt.newValue; RefreshOutput(); });
+            OnValue(Q<Toggle>("numberingField"), evt => { options.Numbering = evt.newValue; RefreshOutput(); });
+            OnValue(Q<Toggle>("forceFolderField"), evt => { options.ForceFolder = evt.newValue; RefreshFields(); });
+            OnValue(Q<TextField>("forcedFolderField"), evt => { options.ForcedFolder = evt.newValue; RefreshOutput(); });
             Button("forcedBrowseButton", () => ChooseFolder(true));
             Button("addPresetButton", AddPreset);
             Button("deletePresetButton", DeletePreset);
-            Q<TextField>("saveName").RegisterValueChangedCallback(evt => { saveName = evt.newValue; RefreshOutput(); });
-            Q<TextField>("saveFolder").RegisterValueChangedCallback(evt => { saveFolder = evt.newValue; RefreshOutput(); });
+            OnValue(Q<TextField>("saveName"), evt => { saveName = evt.newValue; RefreshOutput(); });
+            OnValue(Q<TextField>("saveFolder"), evt => { saveFolder = evt.newValue; RefreshOutput(); });
             Button("browseButton", () => ChooseFolder(false));
             Button("defaultFolderButton", ResetFolder);
             Button("saveButton", SaveImage);
@@ -163,7 +174,7 @@ namespace TY.ImageAssistant
             settingsPanel.RemoveFromHierarchy();
             Button("settingsButton", OpenSettings);
             uiReady = true;
-            RefreshFields();
+            RefreshLanguage();
         }
 
         private T Q<T>(string name) where T : VisualElement => rootVisualElement.Q<T>(name) ?? settingsPanel?.Q<T>(name);
@@ -175,6 +186,15 @@ namespace TY.ImageAssistant
             settingsWindow.Focus();
         }
 
+        private void OnValue<T>(BaseField<T> field, EventCallback<ChangeEvent<T>> callback)
+        {
+            field.RegisterValueChangedCallback(evt =>
+            {
+                if (evt.target == field && !refreshingControls
+                    && EqualityComparer<T>.Default.Equals(evt.newValue, field.value)) callback(evt);
+            });
+        }
+
         private void Button(string name, Action action) => Q<Button>(name).clicked += () => Run(action);
         private void Run(Action action)
         {
@@ -182,11 +202,19 @@ namespace TY.ImageAssistant
             catch (Exception exception) { Message(exception.Message, HelpBoxMessageType.Error); }
         }
 
-        private void Message(string text, HelpBoxMessageType type = HelpBoxMessageType.Info)
+        private void Message(string text, HelpBoxMessageType type = HelpBoxMessageType.Info, params object[] arguments)
         {
             if (status == null) return;
-            status.text = text;
+            statusKey = text;
+            statusArguments = arguments;
             status.messageType = type;
+            RefreshMessage();
+        }
+
+        private void RefreshMessage()
+        {
+            if (status != null) status.text = statusArguments.Length == 0
+                ? ImageLocalization.Text(statusKey) : ImageLocalization.Format(statusKey, statusArguments);
         }
 
         private void SetItem(GameObject next)
@@ -239,14 +267,20 @@ namespace TY.ImageAssistant
 
         private void RefreshPresetChoices()
         {
-            presetField.choices = ImagePresets.BuiltInNames.Concat(presets.Select(p => p.Name)).ToList();
-            presetField.SetValueWithoutNotify(presetName);
+            var previous = refreshingControls;
+            refreshingControls = true;
+            try
+            {
+                presetField.choices = ImagePresets.BuiltInNames.Select(ImageLocalization.Text).Concat(presets.Select(p => p.Name)).ToList();
+                presetField.SetValueWithoutNotify(ImageLocalization.PresetName(presetName));
+            }
+            finally { refreshingControls = previous; }
         }
 
         private void AddPreset()
         {
             var name = Q<TextField>("presetName").value.Trim();
-            if (string.IsNullOrWhiteSpace(name) || presetField.choices.Contains(name))
+            if (string.IsNullOrWhiteSpace(name) || ImageLocalization.IsBuiltInPresetName(name) || presets.Any(p => p.Name == name))
                 throw new ArgumentException("重複しないプリセット名を入力してください。");
             var issue = settings.Validate(int.MaxValue);
             if (issue != null) throw new ArgumentException(issue);
@@ -267,12 +301,32 @@ namespace TY.ImageAssistant
             Message("追加プリセットを削除しました。現在の設定値は維持しています。");
         }
 
+        private void RefreshLanguage()
+        {
+            if (!uiReady) return;
+            refreshingControls = true;
+            try
+            {
+                RefreshPresetChoices();
+                Q<DropdownField>("importField").choices = new List<string>
+                {
+                    ImageLocalization.Text("アイコン"), ImageLocalization.Text("通常（デカール素材）"), ImageLocalization.Text("サムネイル")
+                };
+                ImageLocalization.Translate(rootVisualElement);
+                ImageLocalization.Translate(settingsPanel);
+                RefreshFields();
+                RefreshMessage();
+                Invalidate();
+            }
+            finally { refreshingControls = false; }
+        }
+
         private void RefreshFields()
         {
             if (!uiReady) return;
             Q<ObjectField>("targetField").SetValueWithoutNotify(item);
             Q<ObjectField>("basisField").SetValueWithoutNotify(basis);
-            presetField.SetValueWithoutNotify(presetName);
+            presetField.SetValueWithoutNotify(ImageLocalization.PresetName(presetName));
             Q<IntegerField>("widthField").SetValueWithoutNotify(settings.Width);
             Q<IntegerField>("heightField").SetValueWithoutNotify(settings.Height);
             Q<DropdownField>("samplingField").SetValueWithoutNotify(settings.Supersampling + "x");
@@ -286,7 +340,7 @@ namespace TY.ImageAssistant
             Q<DropdownField>("backgroundField").SetEnabled(!settings.Transparent);
             Q<ColorField>("colorField").SetValueWithoutNotify(backgroundColor);
             Q<ColorField>("colorField").SetEnabled(!settings.Transparent && background == ImageBackground.Solid);
-            Q<Button>("lightingButton").text = fixedLighting ? "照明：専用固定" : "照明：シーン";
+            Q<Button>("lightingButton").text = ImageLocalization.Text(fixedLighting ? "照明：専用固定" : "照明：シーン");
             Q<TextField>("saveName").SetValueWithoutNotify(saveName);
             Q<TextField>("saveFolder").SetValueWithoutNotify(EffectiveFolder);
             Q<TextField>("saveFolder").SetEnabled(!options.ForceFolder);
@@ -311,12 +365,12 @@ namespace TY.ImageAssistant
             try
             {
                 var path = ImageAssetWriter.ResolvePath(EffectiveFolder, saveName, options);
-                Q<Label>("outputSummary").text = issue ?? path + (options.Numbering ? "（連番）" : "（同名は上書き）");
+                Q<Label>("outputSummary").text = ImageLocalization.Text(issue) ?? path + ImageLocalization.Text(options.Numbering ? "（連番）" : "（同名は上書き）");
                 saveButton.SetEnabled(item && preview != null && !faulted && issue == null);
             }
             catch (ArgumentException exception)
             {
-                Q<Label>("outputSummary").text = issue ?? exception.Message;
+                Q<Label>("outputSummary").text = ImageLocalization.Text(issue ?? exception.Message);
                 saveButton.SetEnabled(false);
             }
         }
@@ -325,7 +379,7 @@ namespace TY.ImageAssistant
 
         private void ChooseFolder(bool forced)
         {
-            var path = EditorUtility.OpenFolderPanel("PNGの保存先", Application.dataPath, "");
+            var path = EditorUtility.OpenFolderPanel(ImageLocalization.Text("PNGの保存先"), Application.dataPath, "");
             if (string.IsNullOrEmpty(path)) return;
             var folder = ImageAssetWriter.FromAbsoluteFolder(path);
             if (forced) options.ForcedFolder = folder;
@@ -444,12 +498,12 @@ namespace TY.ImageAssistant
                 dirty = false;
                 Q<Toggle>("orthoField").SetValueWithoutNotify(sceneView.orthographic);
                 Q<Slider>("focalField").SetEnabled(!sceneView.orthographic);
-                Q<Label>("sceneSummary").text = $"{item.scene.name} ｜ メッシュ {preview.SurfaceCount} ｜ {(EditorApplication.isPlaying ? "Play中" : "Edit中")}";
+                Q<Label>("sceneSummary").text = ImageLocalization.Format("{0} ｜ メッシュ {1} ｜ {2}", item.scene.name, preview.SurfaceCount, ImageLocalization.Text(EditorApplication.isPlaying ? "Play中" : "Edit中"));
             }
             catch (Exception exception)
             {
                 faulted = true;
-                Message("プレビューを更新できません。「再読み込み」を試してください。\n" + exception.Message, HelpBoxMessageType.Error);
+                Message(ImageLocalization.Format("プレビューを更新できません。「再読み込み」を試してください。\n{0}", ImageLocalization.Text(exception.Message)), HelpBoxMessageType.Error);
                 RefreshOutput();
             }
         }
@@ -461,15 +515,15 @@ namespace TY.ImageAssistant
             Texture2D image = null;
             try
             {
-                EditorUtility.DisplayProgressBar("FXItemAssistant", "画像を撮影しています…", 0.25f);
+                EditorUtility.DisplayProgressBar("FXItemAssistant", ImageLocalization.Text("画像を撮影しています…"), 0.25f);
                 preview.FixedLighting = fixedLighting;
                 preview.Background = background;
                 preview.BackgroundColor = backgroundColor;
                 preview.FocalLength = focalLength;
                 image = preview.Capture(sceneView, settings);
-                EditorUtility.DisplayProgressBar("FXItemAssistant", "PNGを保存しています…", 0.7f);
+                EditorUtility.DisplayProgressBar("FXItemAssistant", ImageLocalization.Text("PNGを保存しています…"), 0.7f);
                 ImageAssetWriter.Save(path, image, settings);
-                Message("保存しました：" + path);
+                Message("保存しました：{0}", HelpBoxMessageType.Info, path);
             }
             finally
             {

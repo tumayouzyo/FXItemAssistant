@@ -1,6 +1,6 @@
 {
   "name": "io.github.tumayouzyo.fx-item-assistant",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "displayName": "FX Item Assistant",
   "description": "Unity Editor item photography with isolated preview, transparent PNG export, supersampling, and VRChat menu icon presets.",
   "unity": "2022.3",
