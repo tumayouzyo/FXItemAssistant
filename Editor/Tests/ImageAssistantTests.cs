@@ -162,7 +162,7 @@ namespace TY.ImageAssistant.Tests
                 try
                 {
                     Assert.That(after.SequenceEqual(before), Is.False);
-                    Assert.That(captured.GetPixels32().SequenceEqual(original.GetPixels32()), Is.True);
+                    Assert.That(captured.EncodeToPNG(), Is.EqualTo(original.EncodeToPNG()));
                 }
                 finally
                 {

@@ -368,8 +368,7 @@ namespace TY.ImageAssistant
             try
             {
                 RenderTexture.active = frame;
-                image.ReadPixels(new Rect(0, 0, image.width, image.height), 0, 0);
-                image.Apply();
+                image.ReadPixels(new Rect(0, 0, image.width, image.height), 0, 0, false);
                 return image;
             }
             catch { Object.DestroyImmediate(image); throw; }
