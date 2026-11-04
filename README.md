@@ -15,7 +15,7 @@ VRChatのExpression Menu用アイコン、デカール素材、サムネイル�
 1. [Releases](https://github.com/tumayouzyo/FXItemAssistant/releases/latest) から `FXItemAssistant_*.unitypackage` をダウンロードしてImport。
 2. `Tools > FXItemAssistant` を開く。
 
-インポート先は `Assets/TY_FXItemAssistant` 。`git clone`でも。
+インポート先は `Assets/TY_FXItemAssistant` 。このディレクトリ用意して`git clone`でも。
 
 ## 基本操作
 
