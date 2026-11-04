@@ -33,6 +33,10 @@ namespace TY.ImageAssistant
         private RenderTexture display;
         public bool FixedLighting { get; set; }
         public float FocalLength { get; set; } = 85;
+        public CompositionGrid Grid { get; set; }
+        public ImageShape Shape { get; set; }
+        public Texture2D ShapeMask { get; set; }
+        public bool DropShadow { get; set; }
         public ImageBackground Background { get; set; }
         public Color BackgroundColor { get; set; } = new Color(0.18f, 0.18f, 0.18f, 1f);
         public Camera Camera => utility.camera;
@@ -293,6 +297,7 @@ namespace TY.ImageAssistant
         {
             Configure(view);
             RenderTexture black = null;
+            RenderTexture resolved = null;
             var oldActive = RenderTexture.active;
             try
             {
@@ -316,16 +321,35 @@ namespace TY.ImageAssistant
                 resolveMaterial.SetInt("_Factor", factor);
                 resolveMaterial.SetInt("_Transparent", transparent ? 1 : 0);
                 var linear = QualitySettings.activeColorSpace == ColorSpace.Linear;
-                resolveMaterial.SetInt("_Linear", linear && !checker ? 1 : 0);
+                var grid = checker ? Grid : CompositionGrid.None;
+                var shape = Shape == ImageShape.Custom && !ShapeMask ? ImageShape.Rectangle : Shape;
+                var shadow = transparent && DropShadow;
+                var effects = grid != CompositionGrid.None || shape != ImageShape.Rectangle || shadow;
+                resolveMaterial.SetInt("_Linear", linear && !checker && !effects ? 1 : 0);
                 resolveMaterial.SetInt("_PreviewLinear", linear && checker ? 1 : 0);
-                resolveMaterial.SetInt("_Checker", checker && transparent ? 1 : 0);
+                resolveMaterial.SetInt("_Checker", checker && transparent && !effects ? 1 : 0);
                 resolveMaterial.SetVector("_OutputSize", new Vector4(width, height, 0, 0));
-                Graphics.Blit(frame, display, resolveMaterial);
+                if (effects)
+                {
+                    resolved = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+                    resolved.filterMode = FilterMode.Bilinear;
+                    resolved.wrapMode = TextureWrapMode.Clamp;
+                    Graphics.Blit(frame, resolved, resolveMaterial, 0);
+                    resolveMaterial.SetInt("_Grid", (int)grid);
+                    resolveMaterial.SetInt("_Shape", (int)shape);
+                    resolveMaterial.SetInt("_Shadow", shadow ? 1 : 0);
+                    resolveMaterial.SetInt("_Checker", checker && (transparent || shape != ImageShape.Rectangle) ? 1 : 0);
+                    resolveMaterial.SetInt("_Linear", linear && !checker ? 1 : 0);
+                    resolveMaterial.SetTexture("_ShapeMask", ShapeMask ? ShapeMask : Texture2D.whiteTexture);
+                    Graphics.Blit(resolved, display, resolveMaterial, 1);
+                }
+                else Graphics.Blit(frame, display, resolveMaterial, 0);
                 return display;
             }
             finally
             {
                 if (black) RenderTexture.ReleaseTemporary(black);
+                if (resolved) RenderTexture.ReleaseTemporary(resolved);
                 RenderTexture.active = oldActive;
             }
         }
@@ -334,6 +358,8 @@ namespace TY.ImageAssistant
         {
             var issue = settings.Validate(SystemInfo.maxTextureSize);
             if (issue != null) throw new InvalidOperationException(issue);
+            if (Shape == ImageShape.Custom && !ShapeMask)
+                throw new InvalidOperationException(ImageLocalization.Text("マスクテクスチャを指定してください。"));
             Sync(true);
             var frame = Render(view, settings.Width, settings.Height, settings.Transparent, settings.Supersampling);
             var previous = RenderTexture.active;

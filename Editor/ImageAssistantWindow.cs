@@ -36,9 +36,16 @@ namespace TY.ImageAssistant
         private SceneView sceneView;
         private string saveName = "";
         private string saveFolder = "";
-        private string presetName = "規定（ExpMenu）";
+        private string presetName = "アイコン (既定)";
         private bool fixedLighting;
         private ImageBackground background;
+        private CompositionGrid grid;
+        private ImageShape shape;
+        private Texture2D shapeMask;
+        private bool dropShadow;
+
+        private static readonly string[] GridNames = { "なし", "三分割法", "黄金比" };
+        private static readonly string[] ShapeNames = { "全て", "円形切り抜き", "角の丸め", "カスタム" };
         private Color backgroundColor = new Color(0.18f, 0.18f, 0.18f, 1f);
         private float focalLength = 85;
         private bool dirty = true;
@@ -151,6 +158,15 @@ namespace TY.ImageAssistant
                 if (GetSceneView()) { sceneView.orthographic = evt.newValue; sceneView.Repaint(); }
                 Invalidate();
             }));
+            var gridField = Q<DropdownField>("gridField");
+            OnValue(gridField, _ => { grid = (CompositionGrid)gridField.index; Invalidate(); });
+            var shapeField = Q<DropdownField>("shapeField");
+            OnValue(shapeField, _ => { shape = (ImageShape)shapeField.index; RefreshFields(); Invalidate(); });
+            var maskField = Q<ObjectField>("maskField");
+            maskField.objectType = typeof(Texture2D);
+            maskField.allowSceneObjects = false;
+            OnValue(maskField, evt => { shapeMask = evt.newValue as Texture2D; RefreshOutput(); Invalidate(); });
+            OnValue(Q<Toggle>("shadowField"), evt => { dropShadow = evt.newValue; Invalidate(); });
             var backgrounds = Q<DropdownField>("backgroundField");
             backgrounds.choices = new List<string> { "Solid", "Skybox" };
             OnValue(backgrounds, evt => { background = (ImageBackground)backgrounds.index; RefreshFields(); Invalidate(); });
@@ -308,6 +324,8 @@ namespace TY.ImageAssistant
             try
             {
                 RefreshPresetChoices();
+                Q<DropdownField>("gridField").choices = GridNames.Select(ImageLocalization.Text).ToList();
+                Q<DropdownField>("shapeField").choices = ShapeNames.Select(ImageLocalization.Text).ToList();
                 Q<DropdownField>("importField").choices = new List<string>
                 {
                     ImageLocalization.Text("アイコン"), ImageLocalization.Text("通常（デカール素材）"), ImageLocalization.Text("サムネイル")
@@ -353,6 +371,12 @@ namespace TY.ImageAssistant
             Q<TextField>("forcedFolderField").SetValueWithoutNotify(options.ForcedFolder);
             Q<TextField>("forcedFolderField").SetEnabled(options.ForceFolder);
             Q<Button>("forcedBrowseButton").SetEnabled(options.ForceFolder);
+            Q<DropdownField>("gridField").SetValueWithoutNotify(ImageLocalization.Text(GridNames[(int)grid]));
+            Q<DropdownField>("shapeField").SetValueWithoutNotify(ImageLocalization.Text(ShapeNames[(int)shape]));
+            Q<ObjectField>("maskField").SetValueWithoutNotify(shapeMask);
+            Q<ObjectField>("maskField").style.display = shape == ImageShape.Custom ? DisplayStyle.Flex : DisplayStyle.None;
+            Q<Toggle>("shadowField").SetValueWithoutNotify(dropShadow);
+            Q<Toggle>("shadowField").SetEnabled(settings.Transparent);
             RefreshOutput();
         }
 
@@ -362,10 +386,11 @@ namespace TY.ImageAssistant
         {
             if (!uiReady) return;
             var issue = settings.Validate(SystemInfo.maxTextureSize);
+            if (issue == null && shape == ImageShape.Custom && !shapeMask) issue = "マスクテクスチャを指定してください。";
             try
             {
                 var path = ImageAssetWriter.ResolvePath(EffectiveFolder, saveName, options);
-                Q<Label>("outputSummary").text = ImageLocalization.Text(issue) ?? path + ImageLocalization.Text(options.Numbering ? "（連番）" : "（同名は上書き）");
+                Q<Label>("outputSummary").text = ImageLocalization.Text(issue) ?? path + (options.Numbering ? ImageLocalization.Text("（連番）") : string.Empty);
                 saveButton.SetEnabled(item && preview != null && !faulted && issue == null);
             }
             catch (ArgumentException exception)
@@ -484,6 +509,10 @@ namespace TY.ImageAssistant
                 preview.Background = background;
                 preview.BackgroundColor = backgroundColor;
                 preview.FocalLength = focalLength;
+                preview.Grid = grid;
+                preview.Shape = shape;
+                preview.ShapeMask = shapeMask;
+                preview.DropShadow = dropShadow;
                 if (EditorApplication.timeSinceStartup >= nextSourceUpdate)
                 {
                     nextSourceUpdate = EditorApplication.timeSinceStartup + (EditorApplication.isPlaying ? 1d / 30 : 1d / 15);
@@ -520,9 +549,15 @@ namespace TY.ImageAssistant
                 preview.Background = background;
                 preview.BackgroundColor = backgroundColor;
                 preview.FocalLength = focalLength;
+                preview.Grid = grid;
+                preview.Shape = shape;
+                preview.ShapeMask = shapeMask;
+                preview.DropShadow = dropShadow;
                 image = preview.Capture(sceneView, settings);
                 EditorUtility.DisplayProgressBar("FXItemAssistant", ImageLocalization.Text("PNGを保存しています…"), 0.7f);
-                ImageAssetWriter.Save(path, image, settings);
+                var outputSettings = settings.Copy();
+                outputSettings.Transparent |= shape != ImageShape.Rectangle;
+                ImageAssetWriter.Save(path, image, outputSettings);
                 Message("保存しました：{0}", HelpBoxMessageType.Info, path);
             }
             finally

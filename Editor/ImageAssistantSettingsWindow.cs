@@ -45,7 +45,6 @@ namespace TY.ImageAssistant
             languages.Add(japanese);
             languages.Add(english);
             scroll.Add(languages);
-            scroll.Add(new Label("設定・追加プリセット"));
             if (content != null) scroll.Add(content);
             var notice = new Label("設定の変更は即時反映します。追加プリセットは登録時に保存します。") { name = "settingsNotice" };
             notice.AddToClassList("settings-description");

@@ -123,6 +123,96 @@ namespace TY.ImageAssistant.Tests
             }
         }
 
+        [TestCase(ImageShape.Circle)]
+        [TestCase(ImageShape.Rounded)]
+        [TestCase(ImageShape.Custom)]
+        public void ShapeMakesOutsideTransparentEvenWithSolidBackground(ImageShape shape)
+        {
+            var mask = new Texture2D(2, 1);
+            mask.SetPixels(new[] { Color.black, Color.white });
+            mask.Apply();
+            try
+            {
+                using (var preview = new ItemPreviewScene(root, true) { Shape = shape, ShapeMask = mask })
+                {
+                    var image = preview.Capture(view, new ImageCaptureSettings { Width = 96, Height = 64, Transparent = false });
+                    try
+                    {
+                        Assert.That(image.GetPixel(0, 0).a, Is.LessThan(0.01));
+                        Assert.That(image.GetPixel(72, 32).a, Is.GreaterThan(0.99));
+                    }
+                    finally { Object.DestroyImmediate(image); }
+                }
+            }
+            finally { Object.DestroyImmediate(mask); }
+        }
+
+        [TestCase(CompositionGrid.Thirds)]
+        [TestCase(CompositionGrid.GoldenRatio)]
+        public void CompositionGridChangesPreviewButNotCapture(CompositionGrid grid)
+        {
+            using (var preview = new ItemPreviewScene(root, true))
+            {
+                var settings = new ImageCaptureSettings { Width = 96, Height = 64, Supersampling = 1, Transparent = false };
+                var original = preview.Capture(view, settings);
+                var before = ReadPreview(preview.Render(view, 96, 64, false, 1, true));
+                preview.Grid = grid;
+                var after = ReadPreview(preview.Render(view, 96, 64, false, 1, true));
+                var captured = preview.Capture(view, settings);
+                try
+                {
+                    Assert.That(after.SequenceEqual(before), Is.False);
+                    Assert.That(captured.GetPixels32().SequenceEqual(original.GetPixels32()), Is.True);
+                }
+                finally
+                {
+                    Object.DestroyImmediate(original);
+                    Object.DestroyImmediate(captured);
+                }
+            }
+        }
+
+        private static Color32[] ReadPreview(RenderTexture frame)
+        {
+            var active = RenderTexture.active;
+            var image = new Texture2D(frame.width, frame.height, TextureFormat.RGBA32, false);
+            try
+            {
+                RenderTexture.active = frame;
+                image.ReadPixels(new Rect(0, 0, frame.width, frame.height), 0, 0);
+                return image.GetPixels32();
+            }
+            finally
+            {
+                RenderTexture.active = active;
+                Object.DestroyImmediate(image);
+            }
+        }
+
+        [Test]
+        public void ShadowAddsCoverageOutsideTheSubject()
+        {
+            using (var preview = new ItemPreviewScene(root, true))
+            {
+                var settings = new ImageCaptureSettings { Width = 128, Height = 128, Supersampling = 1 };
+                var original = preview.Capture(view, settings);
+                preview.DropShadow = true;
+                var shadowed = preview.Capture(view, settings);
+                try
+                {
+                    var before = original.GetPixels32();
+                    var after = shadowed.GetPixels32();
+                    Assert.That(Enumerable.Range(0, before.Length).Any(i => before[i].a == 0 && after[i].a > 0), Is.True);
+                    Assert.That(shadowed.GetPixel(0, 0).a, Is.Zero);
+                }
+                finally
+                {
+                    Object.DestroyImmediate(original);
+                    Object.DestroyImmediate(shadowed);
+                }
+            }
+        }
+
         [Test]
         public void InactiveRootIsPreviewedWithoutChangingSource()
         {

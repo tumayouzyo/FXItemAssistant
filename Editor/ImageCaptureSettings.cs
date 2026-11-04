@@ -6,6 +6,8 @@ using UnityEngine;
 namespace TY.ImageAssistant
 {
     internal enum ImageImportMode { Icon, Standard, Thumbnail }
+    internal enum ImageShape { Rectangle, Circle, Rounded, Custom }
+    internal enum CompositionGrid { None, Thirds, GoldenRatio }
     internal enum ImageBackground { Solid, Skybox }
 
     [Serializable]
@@ -42,7 +44,7 @@ namespace TY.ImageAssistant
 
     internal static class ImagePresets
     {
-        public static readonly string[] BuiltInNames = { "規定（ExpMenu）", "素材", "サムネイル", "カスタム" };
+        public static readonly string[] BuiltInNames = { "アイコン (既定)", "素材", "サムネイル", "カスタム" };
 
         public static ImageCaptureSettings Create(int index)
         {

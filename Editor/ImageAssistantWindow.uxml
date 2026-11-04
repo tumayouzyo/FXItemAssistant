@@ -23,21 +23,25 @@
         <ui:DropdownField name="presetField" label="プリセット" />
         <ui:IntegerField name="widthField" label="幅 (px)" />
         <ui:IntegerField name="heightField" label="高さ (px)" />
+        <ui:DropdownField name="shapeField" label="画像の形状" />
+        <uie:ObjectField name="maskField" label="マスクテクスチャ" />
         <ui:DropdownField name="importField" label="インポート設定" />
         <ui:DropdownField name="samplingField" label="撮影倍率" />
         <ui:Toggle name="transparentField" label="背景透過" />
         <ui:Toggle name="hideOthersField" label="他Object非表示" />
-        <ui:Label text="カメラ（Sceneビューと同期）" class="title section" />
+        <ui:Toggle name="shadowField" label="ドロップシャドウ" />
+        <ui:Label text="カメラ設定" class="title section" />
+        <ui:DropdownField name="gridField" label="構図グリッド" />
         <ui:Slider name="focalField" label="焦点距離 (mm)" low-value="85" high-value="200" show-input-field="true" />
         <ui:Toggle name="orthoField" label="平行投影" />
         <ui:DropdownField name="backgroundField" label="背景" />
         <uie:ColorField name="colorField" label="背景色" />
         <ui:Label name="sceneSummary" class="hint" />
     </ui:VisualElement>
-    <ui:VisualElement name="settingsPanel" class="section">
-      <ui:ScrollView class="settings">
+    <ui:VisualElement name="settingsPanel">
+      <ui:VisualElement class="settings-group">
+        <ui:Label text="保存ルール" class="settings-heading" />
         <ui:VisualElement class="row wrap">
-          <ui:Toggle name="prefixEnabled" label="接頭辞を付ける" />
           <ui:TextField name="prefixText" label="接頭辞" class="grow" />
           <ui:Toggle name="numberingField" label="ナンバリング保存" />
         </ui:VisualElement>
@@ -46,19 +50,23 @@
           <ui:TextField name="forcedFolderField" label="強制保存先" class="grow" />
           <ui:Button name="forcedBrowseButton" text="フォルダ選択" />
         </ui:VisualElement>
+      </ui:VisualElement>
+      <ui:VisualElement class="settings-group">
+        <ui:Label text="追加プリセット" class="settings-heading" />
         <ui:VisualElement class="row wrap">
           <ui:TextField name="presetName" label="追加プリセット名" class="grow" />
           <ui:Button name="addPresetButton" text="現在の設定を登録" />
           <ui:Button name="deletePresetButton" text="選択プリセットを削除" />
         </ui:VisualElement>
         <ui:Label text="撮影設定は次回起動へ持ち越しません。登録した追加プリセットだけ、このPC・プロジェクト用に保存します。" class="hint" />
-      </ui:ScrollView>
+      </ui:VisualElement>
     </ui:VisualElement>
     <uie:ObjectField name="basisField" label="保存先の基準メッシュ" />
-    <ui:VisualElement class="row">
+    <ui:VisualElement class="row save-field-row">
       <ui:TextField name="saveName" label="保存名" class="grow" />
+      <ui:Toggle name="prefixEnabled" label="接頭辞" />
     </ui:VisualElement>
-    <ui:VisualElement class="row">
+    <ui:VisualElement class="row save-field-row">
       <ui:TextField name="saveFolder" label="保存先" class="grow" />
       <ui:Button name="browseButton" text="フォルダ選択" />
       <ui:Button name="defaultFolderButton" text="既定" />

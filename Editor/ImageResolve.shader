@@ -1,5 +1,10 @@
 Shader "Hidden/TY/ImageAssistant/Resolve"
 {
+    Properties
+    {
+        _MainTex ("Source", 2D) = "white" {}
+        _ShapeMask ("Shape mask", 2D) = "white" {}
+    }
     SubShader
     {
         Cull Off ZWrite Off ZTest Always
@@ -49,6 +54,82 @@ Shader "Hidden/TY/ImageAssistant/Resolve"
                     return float4(lerp(float3(gray, gray, gray), color, alpha), 1);
                 }
                 return float4(color, alpha);
+            }
+            ENDCG
+        }
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert_img
+            #pragma fragment frag
+            #pragma target 3.0
+            #include "UnityCG.cginc"
+            sampler2D _MainTex;
+            sampler2D _ShapeMask;
+            float4 _ShapeMask_TexelSize;
+            float4 _OutputSize;
+            int _Shape, _Shadow, _Grid, _Checker, _Linear, _PreviewLinear;
+
+            float ShapeCoverage(float2 uv, float2 size, float shorterSide)
+            {
+                float coverage = 1;
+                if (_Shape == 3)
+                    {
+                    float2 edge = abs(_ShapeMask_TexelSize.xy) * 0.5;
+                    coverage = saturate(dot(tex2Dlod(_ShapeMask, float4(clamp(uv, edge, 1 - edge), 0, 0)).rgb, float3(0.2126, 0.7152, 0.0722)));
+                }
+                float2 position = abs((uv - 0.5) * size);
+                if (_Shape == 1)
+                    coverage = saturate(shorterSide * 0.5 - length(position) + 0.5);
+                if (_Shape == 2)
+                {
+                    float radius = shorterSide * 0.12;
+                    float2 corner = position - size * 0.5 + radius;
+                    float distance = length(max(corner, 0)) + min(max(corner.x, corner.y), 0) - radius;
+                    coverage = saturate(0.5 - distance);
+                }
+                return coverage;
+            }
+
+            float4 frag(v2f_img input) : SV_Target
+            {
+                float2 uv = input.uv;
+                float2 size = _OutputSize.xy;
+                float shorterSide = min(size.x, size.y);
+                float4 item = tex2D(_MainTex, uv);
+                if (_Shadow != 0)
+                {
+                    float shadow = 0;
+                    float2 center = uv - float2(1, -1) * (0.018 * shorterSide / size);
+                    [unroll] for (int y = -2; y <= 2; y++)
+                    [unroll] for (int x = -2; x <= 2; x++)
+                    {
+                        float2 sampleUV = center + float2(x, y) * (0.009 * shorterSide / size);
+                        if (all(sampleUV >= 0) && all(sampleUV <= 1))
+                            shadow += tex2D(_MainTex, sampleUV).a * (3 - abs(x)) * (3 - abs(y));
+                    }
+                    float alpha = item.a + shadow * (0.42 / 81.0) * (1 - item.a);
+                    item.rgb *= item.a / max(alpha, 0.00001);
+                    item.a = alpha;
+                }
+                item.a *= ShapeCoverage(uv, size, shorterSide);
+                if (_Linear != 0) item.rgb = LinearToGammaSpace(item.rgb);
+                if (_Checker != 0)
+                {
+                    float2 square = floor(uv * size / 12);
+                    float gray = fmod(square.x + square.y, 2) < 1 ? 0.22 : 0.29;
+                    if (_PreviewLinear != 0) gray = GammaToLinearSpace(float3(gray, gray, gray)).r;
+                    item = float4(lerp(gray.xxx, item.rgb, item.a), 1);
+                }
+                if (_Grid != 0)
+                {
+                    float split = _Grid == 1 ? 1.0 / 3.0 : 0.381966;
+                    float2 distance = min(abs(uv - split), abs(uv - (1 - split))) * size;
+                    float lineDistance = min(distance.x, distance.y);
+                    item.rgb = lerp(item.rgb, 0, saturate(2 - lineDistance) * 0.45);
+                    item.rgb = lerp(item.rgb, 1, saturate(1 - lineDistance) * 0.8);
+                }
+                return item;
             }
             ENDCG
         }
