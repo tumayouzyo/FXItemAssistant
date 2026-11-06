@@ -103,6 +103,7 @@ Shader "Hidden/TY/ImageAssistant/Resolve"
                     float shadow = 0;
                     float strength = clamp(_ShadowStrength, 0, 10);
                     float spread = sqrt(strength);
+                    float opacityStrength = min(strength, 1) + max(strength - 1, 0) * 0.1;
                     float2 center = uv - float2(1, -1) * (0.018 * spread * shorterSide / size);
                     [unroll] for (int y = -2; y <= 2; y++)
                     [unroll] for (int x = -2; x <= 2; x++)
@@ -111,7 +112,7 @@ Shader "Hidden/TY/ImageAssistant/Resolve"
                         if (all(sampleUV >= 0) && all(sampleUV <= 1))
                             shadow += tex2D(_MainTex, sampleUV).a * (3 - abs(x)) * (3 - abs(y));
                     }
-                    float alpha = item.a + saturate(shadow * (0.42 * strength / 81.0)) * (1 - item.a);
+                    float alpha = item.a + saturate(shadow * (0.42 * opacityStrength / 81.0)) * (1 - item.a);
                     item.rgb *= item.a / max(alpha, 0.00001);
                     item.a = alpha;
                 }
