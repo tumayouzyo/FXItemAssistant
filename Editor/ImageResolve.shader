@@ -140,8 +140,11 @@ Shader "Hidden/TY/ImageAssistant/Resolve"
                 }
                 if (_Grid == 5)
                 {
-                    float2 p = (uv - 0.5) * size;
-                    lineDistance = min(abs(p.x), abs(p.y));
+                    float2 p = abs((uv - 0.5) * size);
+                    float2 halfLength = size * 0.05;
+                    float horizontal = length(float2(max(p.x - halfLength.x, 0), p.y));
+                    float vertical = length(float2(p.x, max(p.y - halfLength.y, 0)));
+                    lineDistance = min(horizontal, vertical);
                 }
                 float gridAlpha = saturate(1.5 - lineDistance) * 0.75;
                 item.rgb = lerp(item.rgb, 1, gridAlpha);
