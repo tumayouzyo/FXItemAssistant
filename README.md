@@ -12,10 +12,24 @@ VRChatのExpression Menu用アイコン、デカール素材、サムネイル�
 
 ## インストール
 
-1. [Releases](https://github.com/tumayouzyo/FXItemAssistant/releases/latest) から `FXItemAssistant_*.unitypackage` をダウンロードしてImport。
+### VCC
+
+1. [T_Y_Tools](https://tumayouzyo.github.io/vpm-repository/) の「VCCに追加」からリポジトリを登録する。
+2. 対象プロジェクトのManage Projectから `FX Item Assistant` を追加する。
+3. `Tools > FXItemAssistant` を開く。
+
+VCC登録URL: `https://tumayouzyo.github.io/vpm-repository/index.json`
+
+旧Unitypackage版から移行する場合は、事前にプロジェクトをバックアップする。
+VPMの移行処理は `Assets/TY_FXItemAssistant/Editor` を削除してパッケージ版へ置き換える。Editor内の独自追加・変更も削除対象になる。親フォルダに保存した画像は対象外。
+旧版を別の場所へ移動している場合は、そのEditorフォルダを手動で取り除き、二重導入を避ける。
+
+### Unitypackage
+
+1. [Releases](https://github.com/tumayouzyo/FXItemAssistant/releases/latest) から最新の `FXItemAssistant_*.unitypackage` をDL、Import。
 2. `Tools > FXItemAssistant` を開く。
 
-インポート先は `Assets/TY_FXItemAssistant` 。このディレクトリ用意して`git clone`でも。
+インポート先は `Assets/TY_FXItemAssistant` 。VPM版との併用は避ける。
 
 ## 基本操作
 
