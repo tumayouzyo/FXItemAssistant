@@ -12,18 +12,22 @@ namespace TY.ImageAssistant
     {
         private static readonly Dictionary<string, string> EnglishText = new Dictionary<string, string>
         {
-            { "構図グリッド", "Composition grid" },
+            { "格子線表示", "Grid overlay" },
             { "画像の形状", "Image shape" },
             { "マスクテクスチャ", "Mask texture" },
             { "ドロップシャドウ", "Drop shadow" },
             { "なし", "None" },
-            { "三分割法", "Rule of thirds" },
+            { "3X3", "3x3 grid" },
+            { "4X4", "4x4 grid" },
+            { "対角線", "Diagonal lines" },
+            { "中央十字線", "Center crosshair" },
+            { "セーフエリア", "Safe area" },
             { "黄金比", "Golden ratio" },
             { "全て", "Full image" },
             { "円形切り抜き", "Circle crop" },
             { "角の丸め", "Rounded corners" },
             { "マスクテクスチャを指定してください。", "Choose a mask texture." },
-            { "プレビューに構図ガイドを表示します。保存画像には入りません。", "Show composition guides in the preview. Guides are excluded from the saved image." },
+            { "プレビューに構図ガイドを表示します。セーフエリアは現在の画像形状の境界を示します。保存画像には入りません。", "Show composition guides in the preview. Guides are excluded from the saved image." },
             { "保存画像の形状を選択できます。切り抜きの外側は透過します。円は画像の短辺に合わせます。", "Choose the output shape. The area outside the shape is transparent. The circle fits the shorter edge." },
             { "白を残し、黒を透過します。中間色は半透明になります。画像全体に合わせてマスクを適用します。", "White keeps the image, black makes it transparent, and gray gives partial opacity. The mask fits the full canvas." },
             { "背景透過がオンのときに、被写体の右下へ柔らかい影を付けます。影は画像の範囲内に収まります。", "Add a soft shadow below and to the right of the item when background transparency is enabled. The shadow is clipped to the output shape." },
@@ -163,7 +167,7 @@ namespace TY.ImageAssistant
             .ToDictionary(group => group.Key, group => group.First().Key);
         private static readonly Dictionary<string, string> Tips = new Dictionary<string, string>
         {
-            { "gridField", "プレビューに構図ガイドを表示します。保存画像には入りません。" },
+            { "gridField", "プレビューに構図ガイドを表示します。セーフエリアは現在の画像形状の境界を示します。保存画像には入りません。" },
             { "shapeField", "保存画像の形状を選択できます。切り抜きの外側は透過します。円は画像の短辺に合わせます。" },
             { "maskField", "白を残し、黒を透過します。中間色は半透明になります。画像全体に合わせてマスクを適用します。" },
             { "shadowField", "背景透過がオンのときに、被写体の右下へ柔らかい影を付けます。影は画像の範囲内に収まります。" },

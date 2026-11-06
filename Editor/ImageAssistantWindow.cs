@@ -43,7 +43,8 @@ namespace TY.ImageAssistant
         private ImageShape shape;
         private Texture2D shapeMask;
 
-        private static readonly string[] GridNames = { "なし", "三分割法", "黄金比" };
+        private static readonly string[] GridNames = { "なし", "3X3", "4X4", "黄金比", "対角線", "中央十字線" };
+        private bool safeArea = true;
         private static readonly string[] ShapeNames = { "全て", "円形切り抜き", "角の丸め", "カスタム" };
         private Color backgroundColor = new Color(0.18f, 0.18f, 0.18f, 1f);
         private float focalLength = 85;
@@ -159,6 +160,7 @@ namespace TY.ImageAssistant
             }));
             var gridField = Q<DropdownField>("gridField");
             OnValue(gridField, _ => { grid = (CompositionGrid)gridField.index; Invalidate(); });
+            OnValue(Q<Toggle>("safeAreaField"), evt => { safeArea = evt.newValue; Invalidate(); });
             var shapeField = Q<DropdownField>("shapeField");
             OnValue(shapeField, _ => { shape = (ImageShape)shapeField.index; RefreshFields(); Invalidate(); });
             var maskField = Q<ObjectField>("maskField");
@@ -371,6 +373,7 @@ namespace TY.ImageAssistant
             Q<TextField>("forcedFolderField").SetEnabled(options.ForceFolder);
             Q<Button>("forcedBrowseButton").SetEnabled(options.ForceFolder);
             Q<DropdownField>("gridField").SetValueWithoutNotify(ImageLocalization.Text(GridNames[(int)grid]));
+            Q<Toggle>("safeAreaField").SetValueWithoutNotify(safeArea);
             Q<DropdownField>("shapeField").SetValueWithoutNotify(ImageLocalization.Text(ShapeNames[(int)shape]));
             Q<ObjectField>("maskField").SetValueWithoutNotify(shapeMask);
             Q<ObjectField>("maskField").style.display = shape == ImageShape.Custom ? DisplayStyle.Flex : DisplayStyle.None;
@@ -509,6 +512,7 @@ namespace TY.ImageAssistant
                 preview.BackgroundColor = backgroundColor;
                 preview.FocalLength = focalLength;
                 preview.Grid = grid;
+                preview.SafeArea = safeArea;
                 preview.Shape = shape;
                 preview.ShapeMask = shapeMask;
                 preview.DropShadow = settings.DropShadow;
@@ -549,6 +553,7 @@ namespace TY.ImageAssistant
                 preview.BackgroundColor = backgroundColor;
                 preview.FocalLength = focalLength;
                 preview.Grid = grid;
+                preview.SafeArea = safeArea;
                 preview.Shape = shape;
                 preview.ShapeMask = shapeMask;
                 preview.DropShadow = settings.DropShadow;

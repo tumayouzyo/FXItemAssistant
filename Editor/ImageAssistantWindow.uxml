@@ -31,7 +31,8 @@
         <ui:Toggle name="hideOthersField" label="他Object非表示" />
         <ui:Toggle name="shadowField" label="ドロップシャドウ" />
         <ui:Label text="カメラ設定" class="title section" />
-        <ui:DropdownField name="gridField" label="構図グリッド" />
+        <ui:DropdownField name="gridField" label="格子線表示" />
+        <ui:Toggle name="safeAreaField" label="セーフエリア" value="true" />
         <ui:Slider name="focalField" label="焦点距離 (mm)" low-value="85" high-value="200" show-input-field="true" />
         <ui:Toggle name="orthoField" label="平行投影" />
         <ui:DropdownField name="backgroundField" label="背景" />

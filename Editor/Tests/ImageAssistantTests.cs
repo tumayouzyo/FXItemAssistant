@@ -148,7 +148,7 @@ namespace TY.ImageAssistant.Tests
             finally { Object.DestroyImmediate(mask); }
         }
 
-        [TestCase(CompositionGrid.Thirds)]
+        [TestCase(CompositionGrid.Grid3x3)]
         [TestCase(CompositionGrid.GoldenRatio)]
         public void CompositionGridChangesPreviewButNotCapture(CompositionGrid grid)
         {

@@ -34,6 +34,7 @@ namespace TY.ImageAssistant
         public bool FixedLighting { get; set; }
         public float FocalLength { get; set; } = 85;
         public CompositionGrid Grid { get; set; }
+        public bool SafeArea { get; set; }
         public ImageShape Shape { get; set; }
         public Texture2D ShapeMask { get; set; }
         public bool DropShadow { get; set; }
@@ -324,7 +325,7 @@ namespace TY.ImageAssistant
                 var grid = checker ? Grid : CompositionGrid.None;
                 var shape = Shape == ImageShape.Custom && !ShapeMask ? ImageShape.Rectangle : Shape;
                 var shadow = transparent && DropShadow;
-                var effects = grid != CompositionGrid.None || shape != ImageShape.Rectangle || shadow;
+                var effects = checker || grid != CompositionGrid.None || shape != ImageShape.Rectangle || shadow;
                 resolveMaterial.SetInt("_Linear", linear && !checker && !effects ? 1 : 0);
                 resolveMaterial.SetInt("_PreviewLinear", linear && checker ? 1 : 0);
                 resolveMaterial.SetInt("_Checker", checker && transparent && !effects ? 1 : 0);
@@ -336,6 +337,7 @@ namespace TY.ImageAssistant
                     resolved.wrapMode = TextureWrapMode.Clamp;
                     Graphics.Blit(frame, resolved, resolveMaterial, 0);
                     resolveMaterial.SetInt("_Grid", (int)grid);
+                    resolveMaterial.SetInt("_SafeArea", checker && SafeArea ? 1 : 0);
                     resolveMaterial.SetInt("_Shape", (int)shape);
                     resolveMaterial.SetInt("_Shadow", shadow ? 1 : 0);
                     resolveMaterial.SetInt("_Checker", checker && (transparent || shape != ImageShape.Rectangle) ? 1 : 0);

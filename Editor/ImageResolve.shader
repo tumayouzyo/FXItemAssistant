@@ -68,7 +68,7 @@ Shader "Hidden/TY/ImageAssistant/Resolve"
             sampler2D _ShapeMask;
             float4 _ShapeMask_TexelSize;
             float4 _OutputSize;
-            int _Shape, _Shadow, _Grid, _Checker, _Linear, _PreviewLinear;
+            int _Shape, _Shadow, _Grid, _SafeArea, _Checker, _Linear, _PreviewLinear;
 
             float ShapeCoverage(float2 uv, float2 size, float shorterSide)
             {
@@ -121,13 +121,36 @@ Shader "Hidden/TY/ImageAssistant/Resolve"
                     if (_PreviewLinear != 0) gray = GammaToLinearSpace(float3(gray, gray, gray)).r;
                     item = float4(lerp(gray.xxx, item.rgb, item.a), 1);
                 }
-                if (_Grid != 0)
+                float lineDistance = 10000;
+                if (_Grid == 1 || _Grid == 2 || _Grid == 3)
                 {
-                    float split = _Grid == 1 ? 1.0 / 3.0 : 0.381966;
-                    float2 distance = min(abs(uv - split), abs(uv - (1 - split))) * size;
-                    float lineDistance = min(distance.x, distance.y);
-                    item.rgb = lerp(item.rgb, 0, saturate(2 - lineDistance) * 0.45);
-                    item.rgb = lerp(item.rgb, 1, saturate(1 - lineDistance) * 0.8);
+                    float splitA = _Grid == 1 ? 1.0 / 3.0 : (_Grid == 2 ? 0.25 : 0.381966);
+                    float splitB = 1 - splitA;
+                    float2 distance = min(abs(uv - splitA), abs(uv - splitB)) * size;
+                    lineDistance = min(distance.x, distance.y);
+                }
+                if (_Grid == 4)
+                {
+                    float2 p = (uv - 0.5) * size;
+                    lineDistance = min(abs(p.x - p.y), abs(p.x + p.y)) * 0.7071;
+                }
+                if (_Grid == 5)
+                {
+                    float2 p = (uv - 0.5) * size;
+                    lineDistance = min(abs(p.x), abs(p.y));
+                }
+                float gridAlpha = saturate(1.5 - lineDistance) * 0.75;
+                item.rgb = lerp(item.rgb, 1, gridAlpha);
+                if (_SafeArea != 0)
+                {
+                    float2 texel = 1.0 / size;
+                    float coverage = ShapeCoverage(uv, size, shorterSide);
+                    float edgeCoverage = max(max(ShapeCoverage(uv + float2(texel.x, 0), size, shorterSide),
+                        ShapeCoverage(uv - float2(texel.x, 0), size, shorterSide)),
+                        max(ShapeCoverage(uv + float2(0, texel.y), size, shorterSide),
+                        ShapeCoverage(uv - float2(0, texel.y), size, shorterSide)));
+                    float safeLine = saturate(edgeCoverage - coverage) * 0.9;
+                    item.rgb = lerp(item.rgb, 1, safeLine);
                 }
                 return item;
             }

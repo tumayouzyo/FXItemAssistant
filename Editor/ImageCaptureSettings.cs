@@ -7,7 +7,7 @@ namespace TY.ImageAssistant
 {
     internal enum ImageImportMode { Icon, Unchanged, Thumbnail }
     internal enum ImageShape { Rectangle, Circle, Rounded, Custom }
-    internal enum CompositionGrid { None, Thirds, GoldenRatio }
+    internal enum CompositionGrid { None, Grid3x3, Grid4x4, GoldenRatio, Diagonal, CenterCross }
     internal enum ImageBackground { Solid, Skybox }
 
     [Serializable]
