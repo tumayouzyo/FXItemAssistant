@@ -67,6 +67,7 @@ Shader "Hidden/TY/ImageAssistant/Resolve"
             sampler2D _MainTex;
             sampler2D _ShapeMask;
             float4 _ShapeMask_TexelSize;
+            float _ShadowStrength;
             float4 _OutputSize;
             int _Shape, _Shadow, _Grid, _SafeArea, _Checker, _Linear, _PreviewLinear;
 
@@ -108,7 +109,7 @@ Shader "Hidden/TY/ImageAssistant/Resolve"
                         if (all(sampleUV >= 0) && all(sampleUV <= 1))
                             shadow += tex2D(_MainTex, sampleUV).a * (3 - abs(x)) * (3 - abs(y));
                     }
-                    float alpha = item.a + shadow * (0.42 / 81.0) * (1 - item.a);
+                    float alpha = item.a + shadow * (0.42 * _ShadowStrength / 81.0) * (1 - item.a);
                     item.rgb *= item.a / max(alpha, 0.00001);
                     item.a = alpha;
                 }

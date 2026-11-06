@@ -20,6 +20,7 @@ namespace TY.ImageAssistant
         public bool Transparent = true;
         public bool HideOthers = true;
         public bool DropShadow;
+        public float ShadowStrength = 1f;
 
         public ImageCaptureSettings Copy() => JsonUtility.FromJson<ImageCaptureSettings>(JsonUtility.ToJson(this));
 

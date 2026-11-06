@@ -168,6 +168,7 @@ namespace TY.ImageAssistant
             maskField.allowSceneObjects = false;
             OnValue(maskField, evt => { shapeMask = evt.newValue as Texture2D; RefreshOutput(); Invalidate(); });
             OnValue(Q<Toggle>("shadowField"), evt => ChangeSettings(() => settings.DropShadow = evt.newValue));
+            OnValue(Q<Slider>("shadowStrengthField"), evt => ChangeSettings(() => settings.ShadowStrength = evt.newValue));
             var backgrounds = Q<DropdownField>("backgroundField");
             backgrounds.choices = new List<string> { "Solid", "Skybox" };
             OnValue(backgrounds, evt => { background = (ImageBackground)backgrounds.index; RefreshFields(); Invalidate(); });
@@ -379,6 +380,8 @@ namespace TY.ImageAssistant
             Q<ObjectField>("maskField").style.display = shape == ImageShape.Custom ? DisplayStyle.Flex : DisplayStyle.None;
             Q<Toggle>("shadowField").SetValueWithoutNotify(settings.DropShadow);
             Q<Toggle>("shadowField").SetEnabled(settings.Transparent);
+            Q<Slider>("shadowStrengthField").SetValueWithoutNotify(settings.ShadowStrength);
+            Q<Slider>("shadowStrengthField").SetEnabled(settings.DropShadow && settings.Transparent);
             RefreshOutput();
         }
 
@@ -516,6 +519,7 @@ namespace TY.ImageAssistant
                 preview.Shape = shape;
                 preview.ShapeMask = shapeMask;
                 preview.DropShadow = settings.DropShadow;
+                preview.ShadowStrength = settings.ShadowStrength;
                 if (EditorApplication.timeSinceStartup >= nextSourceUpdate)
                 {
                     nextSourceUpdate = EditorApplication.timeSinceStartup + (EditorApplication.isPlaying ? 1d / 30 : 1d / 15);
@@ -557,6 +561,7 @@ namespace TY.ImageAssistant
                 preview.Shape = shape;
                 preview.ShapeMask = shapeMask;
                 preview.DropShadow = settings.DropShadow;
+                preview.ShadowStrength = settings.ShadowStrength;
                 image = preview.Capture(sceneView, settings);
                 EditorUtility.DisplayProgressBar("FXItemAssistant", ImageLocalization.Text("PNGを保存しています…"), 0.7f);
                 var outputSettings = settings.Copy();

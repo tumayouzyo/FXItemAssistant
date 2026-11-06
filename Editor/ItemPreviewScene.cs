@@ -38,6 +38,7 @@ namespace TY.ImageAssistant
         public ImageShape Shape { get; set; }
         public Texture2D ShapeMask { get; set; }
         public bool DropShadow { get; set; }
+        public float ShadowStrength { get; set; } = 1f;
         public ImageBackground Background { get; set; }
         public Color BackgroundColor { get; set; } = new Color(0.18f, 0.18f, 0.18f, 1f);
         public Camera Camera => utility.camera;
@@ -340,6 +341,7 @@ namespace TY.ImageAssistant
                     resolveMaterial.SetInt("_SafeArea", checker && SafeArea ? 1 : 0);
                     resolveMaterial.SetInt("_Shape", (int)shape);
                     resolveMaterial.SetInt("_Shadow", shadow ? 1 : 0);
+                    resolveMaterial.SetFloat("_ShadowStrength", ShadowStrength);
                     resolveMaterial.SetInt("_Checker", checker && (transparent || shape != ImageShape.Rectangle) ? 1 : 0);
                     resolveMaterial.SetInt("_Linear", linear && !checker ? 1 : 0);
                     resolveMaterial.SetTexture("_ShapeMask", ShapeMask ? ShapeMask : Texture2D.whiteTexture);
