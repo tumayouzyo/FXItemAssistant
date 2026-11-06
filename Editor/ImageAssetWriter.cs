@@ -83,25 +83,29 @@ namespace TY.ImageAssistant
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (!importer) throw new IOException("保存画像のインポーターを取得できませんでした。");
-            ApplyImportSettings(importer, settings);
-            importer.SaveAndReimport();
+            if (settings.ImportMode != ImageImportMode.Unchanged)
+            {
+                ApplyImportSettings(importer, settings);
+                importer.SaveAndReimport();
+            }
         }
 
         internal static void ApplyImportSettings(TextureImporter importer, ImageCaptureSettings settings)
         {
+            if (settings.ImportMode == ImageImportMode.Unchanged) return;
             var maxSize = Mathf.Clamp(Mathf.NextPowerOfTwo(Mathf.Max(settings.Width, settings.Height)), 32, 16384);
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;
             importer.sRGBTexture = true;
             importer.alphaSource = TextureImporterAlphaSource.FromInput;
             importer.alphaIsTransparency = settings.Transparent;
-            importer.mipmapEnabled = settings.ImportMode == ImageImportMode.Standard;
+            importer.mipmapEnabled = false;
             importer.streamingMipmaps = false;
             importer.isReadable = false;
             importer.npotScale = TextureImporterNPOTScale.None;
             importer.wrapMode = TextureWrapMode.Clamp;
-            importer.filterMode = settings.ImportMode == ImageImportMode.Standard ? FilterMode.Trilinear : FilterMode.Bilinear;
-            importer.anisoLevel = settings.ImportMode == ImageImportMode.Standard ? 2 : 0;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.anisoLevel = 0;
             importer.maxTextureSize = maxSize;
             importer.textureCompression = TextureImporterCompression.CompressedHQ;
             importer.compressionQuality = 100;

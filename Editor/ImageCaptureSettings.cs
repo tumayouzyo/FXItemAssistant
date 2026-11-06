@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace TY.ImageAssistant
 {
-    internal enum ImageImportMode { Icon, Standard, Thumbnail }
+    internal enum ImageImportMode { Icon, Unchanged, Thumbnail }
     internal enum ImageShape { Rectangle, Circle, Rounded, Custom }
     internal enum CompositionGrid { None, Thirds, GoldenRatio }
     internal enum ImageBackground { Solid, Skybox }
@@ -19,6 +19,7 @@ namespace TY.ImageAssistant
         public ImageImportMode ImportMode;
         public bool Transparent = true;
         public bool HideOthers = true;
+        public bool DropShadow;
 
         public ImageCaptureSettings Copy() => JsonUtility.FromJson<ImageCaptureSettings>(JsonUtility.ToJson(this));
 
@@ -50,8 +51,8 @@ namespace TY.ImageAssistant
         {
             switch (index)
             {
-                case 0: return new ImageCaptureSettings();
-                case 1: return new ImageCaptureSettings { Width = 4096, Height = 4096, ImportMode = ImageImportMode.Standard };
+                case 0: return new ImageCaptureSettings { DropShadow = true };
+                case 1: return new ImageCaptureSettings { Width = 4096, Height = 4096, ImportMode = ImageImportMode.Unchanged };
                 case 2: return new ImageCaptureSettings { Width = 1200, Height = 900, ImportMode = ImageImportMode.Thumbnail, Transparent = false, HideOthers = false };
                 default: throw new ArgumentOutOfRangeException(nameof(index));
             }
@@ -73,7 +74,7 @@ namespace TY.ImageAssistant
 
     internal sealed class ImageToolOptions
     {
-        public bool PrefixEnabled;
+        public bool PrefixEnabled = true;
         public string Prefix = "IA_";
         public bool Numbering;
         public bool ForceFolder;

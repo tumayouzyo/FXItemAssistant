@@ -27,7 +27,7 @@ namespace TY.ImageAssistant
                 return assetRoot;
             }
         }
-        private ImageCaptureSettings settings = new ImageCaptureSettings();
+        private ImageCaptureSettings settings = ImagePresets.Create(0);
         private readonly ImageToolOptions options = new ImageToolOptions();
         private List<ImagePreset> presets;
         private GameObject item;
@@ -42,7 +42,6 @@ namespace TY.ImageAssistant
         private CompositionGrid grid;
         private ImageShape shape;
         private Texture2D shapeMask;
-        private bool dropShadow;
 
         private static readonly string[] GridNames = { "なし", "三分割法", "黄金比" };
         private static readonly string[] ShapeNames = { "全て", "円形切り抜き", "角の丸め", "カスタム" };
@@ -136,7 +135,7 @@ namespace TY.ImageAssistant
             sampling.choices = Enumerable.Range(1, 8).Select(value => value + "x").ToList();
             OnValue(sampling, evt => ChangeSettings(() => settings.Supersampling = sampling.index + 1));
             var imports = Q<DropdownField>("importField");
-            imports.choices = new List<string> { ImageLocalization.Text("アイコン"), ImageLocalization.Text("通常（デカール素材）"), ImageLocalization.Text("サムネイル") };
+            imports.choices = new List<string> { ImageLocalization.Text("アイコン用"), ImageLocalization.Text("変更なし"), ImageLocalization.Text("サムネイル用") };
             OnValue(imports, evt =>
             {
                 if (!refreshingControls) ChangeSettings(() => settings.ImportMode = (ImageImportMode)imports.index);
@@ -166,7 +165,7 @@ namespace TY.ImageAssistant
             maskField.objectType = typeof(Texture2D);
             maskField.allowSceneObjects = false;
             OnValue(maskField, evt => { shapeMask = evt.newValue as Texture2D; RefreshOutput(); Invalidate(); });
-            OnValue(Q<Toggle>("shadowField"), evt => { dropShadow = evt.newValue; Invalidate(); });
+            OnValue(Q<Toggle>("shadowField"), evt => ChangeSettings(() => settings.DropShadow = evt.newValue));
             var backgrounds = Q<DropdownField>("backgroundField");
             backgrounds.choices = new List<string> { "Solid", "Skybox" };
             OnValue(backgrounds, evt => { background = (ImageBackground)backgrounds.index; RefreshFields(); Invalidate(); });
@@ -328,7 +327,7 @@ namespace TY.ImageAssistant
                 Q<DropdownField>("shapeField").choices = ShapeNames.Select(ImageLocalization.Text).ToList();
                 Q<DropdownField>("importField").choices = new List<string>
                 {
-                    ImageLocalization.Text("アイコン"), ImageLocalization.Text("通常（デカール素材）"), ImageLocalization.Text("サムネイル")
+                    ImageLocalization.Text("アイコン用"), ImageLocalization.Text("変更なし"), ImageLocalization.Text("サムネイル用")
                 };
                 ImageLocalization.Translate(rootVisualElement);
                 ImageLocalization.Translate(settingsPanel);
@@ -375,7 +374,7 @@ namespace TY.ImageAssistant
             Q<DropdownField>("shapeField").SetValueWithoutNotify(ImageLocalization.Text(ShapeNames[(int)shape]));
             Q<ObjectField>("maskField").SetValueWithoutNotify(shapeMask);
             Q<ObjectField>("maskField").style.display = shape == ImageShape.Custom ? DisplayStyle.Flex : DisplayStyle.None;
-            Q<Toggle>("shadowField").SetValueWithoutNotify(dropShadow);
+            Q<Toggle>("shadowField").SetValueWithoutNotify(settings.DropShadow);
             Q<Toggle>("shadowField").SetEnabled(settings.Transparent);
             RefreshOutput();
         }
@@ -512,7 +511,7 @@ namespace TY.ImageAssistant
                 preview.Grid = grid;
                 preview.Shape = shape;
                 preview.ShapeMask = shapeMask;
-                preview.DropShadow = dropShadow;
+                preview.DropShadow = settings.DropShadow;
                 if (EditorApplication.timeSinceStartup >= nextSourceUpdate)
                 {
                     nextSourceUpdate = EditorApplication.timeSinceStartup + (EditorApplication.isPlaying ? 1d / 30 : 1d / 15);
@@ -552,7 +551,7 @@ namespace TY.ImageAssistant
                 preview.Grid = grid;
                 preview.Shape = shape;
                 preview.ShapeMask = shapeMask;
-                preview.DropShadow = dropShadow;
+                preview.DropShadow = settings.DropShadow;
                 image = preview.Capture(sceneView, settings);
                 EditorUtility.DisplayProgressBar("FXItemAssistant", ImageLocalization.Text("PNGを保存しています…"), 0.7f);
                 var outputSettings = settings.Copy();

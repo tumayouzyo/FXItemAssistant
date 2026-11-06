@@ -64,13 +64,14 @@ namespace TY.ImageAssistant.Tests
         }
 
         [TestCase(0, 256, 256, true, true, ImageImportMode.Icon)]
-        [TestCase(1, 4096, 4096, true, true, ImageImportMode.Standard)]
+        [TestCase(1, 4096, 4096, true, true, ImageImportMode.Unchanged)]
         [TestCase(2, 1200, 900, false, false, ImageImportMode.Thumbnail)]
         public void BuiltInPresetContract(int preset, int width, int height, bool transparent, bool hideOthers, ImageImportMode mode)
         {
             var settings = ImagePresets.Create(preset);
             Assert.That((settings.Width, settings.Height, settings.Supersampling), Is.EqualTo((width, height, 2)));
             Assert.That((settings.Transparent, settings.HideOthers, settings.ImportMode), Is.EqualTo((transparent, hideOthers, mode)));
+            Assert.That(settings.DropShadow, Is.EqualTo(preset == 0));
         }
 
         [Test]
@@ -293,21 +294,28 @@ namespace TY.ImageAssistant.Tests
             var image = new Texture2D(120, 90, TextureFormat.RGBA32, false);
             try
             {
-                var settings = new ImageCaptureSettings { Width = 120, Height = 90, ImportMode = ImageImportMode.Standard };
+                var settings = new ImageCaptureSettings { Width = 120, Height = 90, ImportMode = ImageImportMode.Thumbnail };
                 ImageAssetWriter.Save(path, image, settings);
                 var imported = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 var importer = (TextureImporter)AssetImporter.GetAtPath(path);
                 Assert.That((imported.width, imported.height), Is.EqualTo((120, 90)));
-                Assert.That(importer.mipmapEnabled, Is.True);
+                Assert.That(importer.mipmapEnabled, Is.False);
                 Assert.That(importer.npotScale, Is.EqualTo(TextureImporterNPOTScale.None));
                 Assert.That(importer.isReadable, Is.False);
                 Assert.That(importer.GetPlatformTextureSettings("Standalone").format, Is.EqualTo(TextureImporterFormat.BC7));
                 Assert.That(importer.GetPlatformTextureSettings("Android").format, Is.EqualTo(TextureImporterFormat.ASTC_4x4));
-                var numbered = ImageAssetWriter.ResolvePath(folder, "sample", new ImageToolOptions { Numbering = true });
+                var numbered = ImageAssetWriter.ResolvePath(folder, "sample", new ImageToolOptions { Numbering = true, PrefixEnabled = false });
                 Assert.That(numbered, Does.EndWith("sample_001.png"));
                 var guid = AssetDatabase.AssetPathToGUID(path);
                 ImageAssetWriter.Save(path, image, settings);
                 Assert.That(AssetDatabase.AssetPathToGUID(path), Is.EqualTo(guid));
+                importer.wrapMode = TextureWrapMode.Repeat;
+                importer.mipmapEnabled = true;
+                importer.SaveAndReimport();
+                var before = EditorJsonUtility.ToJson(importer);
+                settings.ImportMode = ImageImportMode.Unchanged;
+                ImageAssetWriter.Save(path, image, settings);
+                Assert.That(EditorJsonUtility.ToJson(AssetImporter.GetAtPath(path)), Is.EqualTo(before));
             }
             finally
             {
