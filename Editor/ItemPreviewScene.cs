@@ -38,7 +38,7 @@ namespace TY.ImageAssistant
         public ImageShape Shape { get; set; }
         public Texture2D ShapeMask { get; set; }
         public bool DropShadow { get; set; }
-        public float ShadowStrength { get; set; } = 1f;
+        public float ShadowStrength { get; set; } = 3f;
         public ImageBackground Background { get; set; }
         public Color BackgroundColor { get; set; } = new Color(0.18f, 0.18f, 0.18f, 1f);
         public Camera Camera => utility.camera;

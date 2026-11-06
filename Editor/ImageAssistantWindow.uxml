@@ -30,7 +30,7 @@
         <ui:Toggle name="transparentField" label="背景透過" />
         <ui:Toggle name="hideOthersField" label="他Object非表示" />
         <ui:Toggle name="shadowField" label="ドロップシャドウ" />
-        <ui:Slider name="shadowStrengthField" label="影の強さ" low-value="0" high-value="10" value="1" show-input-field="true" />
+        <ui:Slider name="shadowStrengthField" label="影の強さ" low-value="0" high-value="10" value="3" show-input-field="true" />
         <ui:Label text="カメラ設定" class="title section" />
         <ui:DropdownField name="gridField" label="格子線表示" />
         <ui:Toggle name="safeAreaField" label="セーフエリア" value="true" />
