@@ -1,6 +1,6 @@
 {
   "name": "io.github.tumayouzyo.fx-item-assistant",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "displayName": "FX Item Assistant",
   "description": "Unity Editor item photography with isolated preview, transparent PNG export, supersampling, and VRChat menu icon presets.",
   "unity": "2022.3",
@@ -20,7 +20,7 @@
     "photography",
     "editor"
   ],
-  "url": "https://github.com/tumayouzyo/FXItemAssistant/releases/download/v0.1.4/io.github.tumayouzyo.fx-item-assistant-0.1.4.zip",
+  "url": "https://github.com/tumayouzyo/FXItemAssistant/releases/download/v0.1.5/io.github.tumayouzyo.fx-item-assistant-0.1.5.zip",
   "changelogUrl": "https://github.com/tumayouzyo/FXItemAssistant/blob/main/CHANGELOG.md",
   "legacyFolders": {
     "Assets\\TY_FXItemAssistant\\Editor": ""
