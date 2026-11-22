@@ -16,6 +16,9 @@ namespace TY.ImageAssistant
             { "画像の形状", "Image shape" },
             { "マスクテクスチャ", "Mask texture" },
             { "ドロップシャドウ", "Drop shadow" },
+            { "影の強さ", "Shadow strength" },
+            { "影の濃さ・ぼかし幅・右下へのずれを調整します。初期値は3です。0〜10で設定できます。", "Adjust shadow opacity, blur and offset. Default: 3. Range: 0 to 10." },
+            { "現在の画像形状の撮影範囲を線で表示します。保存画像には入りません。", "Outline the capture area for the current image shape. This outline is excluded from the saved image." },
             { "なし", "None" },
             { "3X3", "3x3 grid" },
             { "4X4", "4x4 grid" },
@@ -167,6 +170,7 @@ namespace TY.ImageAssistant
             .ToDictionary(group => group.Key, group => group.First().Key);
         private static readonly Dictionary<string, string> Tips = new Dictionary<string, string>
         {
+            { "safeAreaField", "現在の画像形状の撮影範囲を線で表示します。保存画像には入りません。" },
             { "gridField", "プレビューに構図ガイドを表示します。セーフエリアは現在の画像形状の境界を示します。保存画像には入りません。" },
             { "shapeField", "保存画像の形状を選択できます。切り抜きの外側は透過します。円は画像の短辺に合わせます。" },
             { "maskField", "白を残し、黒を透過します。中間色は半透明になります。画像全体に合わせてマスクを適用します。" },

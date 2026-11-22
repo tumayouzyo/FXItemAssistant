@@ -150,6 +150,9 @@ namespace TY.ImageAssistant.Tests
 
         [TestCase(CompositionGrid.Grid3x3)]
         [TestCase(CompositionGrid.GoldenRatio)]
+        [TestCase(CompositionGrid.Grid4x4)]
+        [TestCase(CompositionGrid.Diagonal)]
+        [TestCase(CompositionGrid.CenterCross)]
         public void CompositionGridChangesPreviewButNotCapture(CompositionGrid grid)
         {
             using (var preview = new ItemPreviewScene(root, true))
@@ -163,6 +166,77 @@ namespace TY.ImageAssistant.Tests
                 try
                 {
                     Assert.That(after.SequenceEqual(before), Is.False);
+                    Assert.That(captured.EncodeToPNG(), Is.EqualTo(original.EncodeToPNG()));
+                }
+                finally
+                {
+                    Object.DestroyImmediate(original);
+                    Object.DestroyImmediate(captured);
+                }
+            }
+        }
+
+        [Test]
+        public void ForcedSyncIncludesHierarchyChangesImmediately()
+        {
+            using (var preview = new ItemPreviewScene(root, true))
+            {
+                preview.Sync();
+                var child = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                child.transform.SetParent(root.transform, false);
+                Assert.That(preview.SurfaceCount, Is.EqualTo(1));
+                preview.Sync(true);
+                Assert.That(preview.SurfaceCount, Is.EqualTo(2));
+                Object.DestroyImmediate(child);
+                preview.Sync(true);
+                Assert.That(preview.SurfaceCount, Is.EqualTo(1));
+            }
+        }
+
+        [Test]
+        public void FourByFourGridIncludesCenterAndQuarterLines()
+        {
+            material.color = Color.black;
+            using (var preview = new ItemPreviewScene(root, true) { Grid = CompositionGrid.Grid4x4, BackgroundColor = Color.black })
+            {
+                var pixels = ReadPreview(preview.Render(view, 200, 200, false, 1, true));
+                foreach (var x in new[] { 49, 99, 149 })
+                    Assert.That(pixels[24 * 200 + x].r, Is.GreaterThan(80), "Missing grid line at " + x);
+                Assert.That(pixels[24 * 200 + 24].r, Is.LessThan(10));
+            }
+        }
+
+        [Test]
+        public void DiagonalGridFollowsRectangularImageCorners()
+        {
+            material.color = Color.black;
+            using (var preview = new ItemPreviewScene(root, true) { Grid = CompositionGrid.Diagonal, BackgroundColor = Color.black })
+            {
+                var pixels = ReadPreview(preview.Render(view, 240, 120, false, 1, true));
+                Assert.That(pixels[12 * 240 + 24].r, Is.GreaterThan(80));
+                Assert.That(pixels[12 * 240 + 72].r, Is.LessThan(10));
+            }
+        }
+
+        [TestCase(ImageShape.Rectangle)]
+        [TestCase(ImageShape.Rounded)]
+        [TestCase(ImageShape.Circle)]
+        [TestCase(ImageShape.Custom)]
+        public void SafeAreaOutlinesShapeWithoutChangingCapture(ImageShape shape)
+        {
+            material.color = Color.black;
+            using (var preview = new ItemPreviewScene(root, true)
+                { Shape = shape, ShapeMask = Texture2D.whiteTexture, BackgroundColor = Color.black })
+            {
+                var settings = new ImageCaptureSettings { Width = 120, Height = 120, Transparent = false };
+                var original = preview.Capture(view, settings);
+                var before = ReadPreview(preview.Render(view, 120, 120, false, 1, true));
+                preview.SafeArea = true;
+                var after = ReadPreview(preview.Render(view, 120, 120, false, 1, true));
+                var captured = preview.Capture(view, settings);
+                try
+                {
+                    Assert.That(after[60 * 120 + 119].r, Is.GreaterThan(before[60 * 120 + 119].r));
                     Assert.That(captured.EncodeToPNG(), Is.EqualTo(original.EncodeToPNG()));
                 }
                 finally

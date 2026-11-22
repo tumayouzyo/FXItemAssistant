@@ -181,7 +181,7 @@ namespace TY.ImageAssistant
         public bool Sync(bool force = false)
         {
             if (!target) return false;
-            if (!force && EditorApplication.timeSinceStartup >= nextTopologyCheck)
+            if (force || EditorApplication.timeSinceStartup >= nextTopologyCheck)
             {
                 nextTopologyCheck = EditorApplication.timeSinceStartup + 0.5;
                 if (topologySignature != TopologyHash(Sources(), DirectionalLights())) { Rebuild(); return true; }
