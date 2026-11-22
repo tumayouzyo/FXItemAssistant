@@ -3,12 +3,12 @@
 ![VRChat](https://img.shields.io/badge/VRChat-Menu_Icons-19b9e7)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-**責任者:** [tumayouzyo](https://github.com/tumayouzyo)  
-**作成者:** Codex
+責任者: [tumayouzyo](https://github.com/tumayouzyo)  
+作成者: Codex
 
 VRChatのExpression Menu用アイコン、デカール素材、サムネイルをPNGへ撮影するUnity Editor拡張。AI slop。
 
-**メニュー:** `Tools > FXItemAssistant`
+メニュー: `Tools > FXItemAssistant`
 
 ## インストール
 
@@ -59,7 +59,7 @@ Sceneビューと位置・向きを同期。FOVは変更せず、撮影用の焦
 
 Material 0のBase Color／Albedoテクスチャと同じフォルダ内の `_icon` が既定。自動判定できない場合はAssets内のフォルダを指定。フォルダは保存時に作成。
 
-**同名PNGは確認なしで上書きし、インポート設定も更新。「変更なし」選択時は既存設定を維持。** 元素材と同じパス・名前を指定すると元画像も上書きされる。連番保存は設定から有効化。
+同名PNGは確認なしで上書きし、インポート設定も更新。「変更なし」選択時は既存設定を維持。 元素材と同じパス・名前を指定すると元画像も上書きされる。連番保存は設定から有効化。
 
 設定ウィンドウで日本語／Englishを切替。ボタン・項目の説明はマウスオーバーで表示。
 
