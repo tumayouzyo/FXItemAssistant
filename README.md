@@ -6,7 +6,7 @@
 責任者: [tumayouzyo](https://github.com/tumayouzyo)  
 作成者: Codex
 
-VRChatのExpression Menu用アイコン、デカール素材、サムネイルをPNGへ撮影するUnity Editor拡張。AI slop。
+VRChatのExpression Menu用アイコン、デカール素材、サムネイルをPNGで保存するUnity Editor拡張。AI slop。
 
 メニュー: `Tools > FXItemAssistant`
 
